@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Reportes — Panel Buses UNE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/base.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <div>Reportes y Analytics</div>
+    <nav>
+      <a href="/admin/index.html">Dashboard</a>
+      <a href="/admin/reports.html">Reportes</a>
+      <button id="logoutBtn">Salir</button>
+    </nav>
+  </header>
+
+  <main class="content">
+    <section style="
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    ">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+        <div style="
+          width: 48px;
+          height: 48px;
+          background: linear-gradient(135deg, var(--primary), var(--success));
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 20px;
+        ">📊</div>
+        <div>
+          <h2 style="margin: 0;">Recorridos por Rango de Fechas</h2>
+          <p style="margin: 4px 0 0 0; color: var(--text-muted); font-size: 14px;">
+            Consulta y exporta el historial de recorridos de los buses
+          </p>
+        </div>
+      </div>
+      
+      <div class="row" style="margin-bottom: 20px;">
+        <div style="flex: 1; min-width: 200px;">
+          <label style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 14px;">
+            📅 Fecha de inicio
+          </label>
+          <input type="date" id="fromDate" style="width: 100%;"/>
+        </div>
+        
+        <div style="flex: 1; min-width: 200px;">
+          <label style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 14px;">
+            📅 Fecha de fin
+          </label>
+          <input type="date" id="toDate" style="width: 100%;"/>
+        </div>
+        
+        <div style="flex: 1; min-width: 200px;">
+          <label style="display: block; margin-bottom: 6px; font-weight: 500; color: var(--text); font-size: 14px;">
+            🚐 Driver ID (opcional)
+          </label>
+          <input type="text" id="driverId" placeholder="Ej: driver001" style="width: 100%;"/>
+        </div>
+      </div>
+      
+      <div class="row" style="gap: 16px;">
+        <button id="runBtn" style="
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 140px;
+          justify-content: center;
+        ">
+          <span>🔍</span>
+          Consultar
+        </button>
+        
+        <button id="csvBtn" style="
+          background: var(--success);
+          border-color: var(--success);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 140px;
+          justify-content: center;
+        ">
+          <span>📥</span>
+          Exportar CSV
+        </button>
+        
+        <button id="clearBtn" style="
+          background: var(--secondary);
+          border-color: var(--secondary);
+          color: white;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          min-width: 120px;
+          justify-content: center;
+        ">
+          <span>🗑️</span>
+          Limpiar
+        </button>
+      </div>
+    </section>
+
+    <!-- Resumen de datos -->
+    <div id="summary" style="display: none;"></div>
+
+    <!-- Tabla de resultados -->
+    <div id="tableContainer" style="display: none;">
+      <div style="
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+      ">
+        <div style="
+          padding: 20px 24px;
+          border-bottom: 1px solid var(--border);
+          background: var(--background);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        ">
+          <h3 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+            <span>📋</span>
+            Resultados de la Consulta
+          </h3>
+          <div id="pagination" style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted);">
+            <!-- Paginación será insertada aquí -->
+          </div>
+        </div>
+        <div id="table" style="overflow-x: auto;"></div>
+      </div>
+    </div>
+
+    <!-- Mensaje de estado vacío -->
+    <div id="emptyState" style="
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      margin-top: 24px;
+    ">
+      <div style="font-size: 64px; margin-bottom: 16px;">📊</div>
+      <h3 style="margin: 0 0 8px 0; font-weight: 600; color: var(--text);">Sin datos para mostrar</h3>
+      <p style="margin: 0; font-size: 14px;">
+        Selecciona un rango de fechas y haz clic en "Consultar" para ver los recorridos
+      </p>
+    </div>
+  </main>
+
+  <script type="module">
+    import './assets/js/config.js';
+    import { auth } from './assets/js/firebase.js';
+    import { requireSession, signOutNow } from './assets/js/auth.js';
+
+    await requireSession(auth, '/admin/login.html');
+    logoutBtn.onclick = () => signOutNow(auth);
+
+    let lastRows = [];
+    let currentPage = 1;
+    const itemsPerPage = 50;
+
+    // Establecer fechas por defecto (último mes)
+    const today = new Date();
+    const lastMonth = new Date(today);
+    lastMonth.setMonth(today.getMonth() - 1);
+    
+    document.getElementById('toDate').value = today.toISOString().split('T')[0];
+    document.getElementById('fromDate').value = lastMonth.toISOString().split('T')[0];
+
+    function showLoading(button) {
+      const originalText = button.innerHTML;
+      button.disabled = true;
+      button.innerHTML = `
+        <div style="
+          width: 16px;
+          height: 16px;
+          border: 2px solid transparent;
+          border-top: 2px solid currentColor;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        "></div>
+        Consultando...
+      `;
+      return () => {
+        button.disabled = false;
+        button.innerHTML = originalText;
+      };
+    }
+
+    function formatDateTime(timestamp) {
+      if (!timestamp) return '—';
+      const date = new Date(timestamp);
+      return date.toLocaleString('es-PE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    }
+
+    function getStatusBadge(status) {
+      const badges = {
+        'EN_RUTA': '<span style="background: #dcfce7; color: #059669; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">🟢 EN RUTA</span>',
+        'DETENIDO': '<span style="background: #fef3c7; color: #d97706; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">🟡 DETENIDO</span>',
+        'SOS': '<span style="background: #fee2e2; color: #dc2626; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">🔴 SOS</span>',
+        'SIN_SENAL': '<span style="background: #f1f5f9; color: #64748b; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">📵 SIN SEÑAL</span>',
+        'FUERA_DE_SERVICIO': '<span style="background: #f3f4f6; color: #64748b; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">⚫ FUERA</span>'
+      };
+      return badges[status] || `<span style="background: #f3f4f6; color: #64748b; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;">${status || '—'}</span>`;
+    }
+
+    function renderTable(rows) {
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const pageData = rows.slice(start, end);
+      const totalPages = Math.ceil(rows.length / itemsPerPage);
+
+      document.getElementById('table').innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>📅 Fecha</th>
+              <th>🚐 Driver</th>
+              <th>🕐 Hora</th>
+              <th>📍 Latitud</th>
+              <th>📍 Longitud</th>
+              <th>🚗 Velocidad</th>
+              <th>📊 Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${pageData.map((r, index) => `
+              <tr style="border-left: 3px solid ${r.status === 'EN_RUTA' ? '#059669' : r.status === 'SOS' ? '#dc2626' : '#e2e8f0'};">
+                <td style="font-weight: 500;">${r.day}</td>
+                <td><span style="font-family: monospace; background: var(--background); padding: 2px 6px; border-radius: 4px; font-size: 12px;">${r.driverId}</span></td>
+                <td>${formatDateTime(r.ts).split(' ')[1]}</td>
+                <td style="font-family: monospace; font-size: 13px;">${r.lat.toFixed(5)}</td>
+                <td style="font-family: monospace; font-size: 13px;">${r.lng.toFixed(5)}</td>
+                <td><strong>${r.speed ?? 0}</strong> km/h</td>
+                <td>${getStatusBadge(r.status)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      // Renderizar paginación
+      document.getElementById('pagination').innerHTML = `
+        <span>Página ${currentPage} de ${totalPages} (${rows.length} registros)</span>
+        ${currentPage > 1 ? '<button onclick="goToPage(' + (currentPage - 1) + ')" style="margin-left: 8px; padding: 4px 8px; border: 1px solid var(--border); background: var(--surface); border-radius: 4px; cursor: pointer;">← Anterior</button>' : ''}
+        ${currentPage < totalPages ? '<button onclick="goToPage(' + (currentPage + 1) + ')" style="margin-left: 4px; padding: 4px 8px; border: 1px solid var(--border); background: var(--surface); border-radius: 4px; cursor: pointer;">Siguiente →</button>' : ''}
+      `;
+    }
+
+    window.goToPage = function(page) {
+      currentPage = page;
+      renderTable(lastRows);
+    };
+
+    document.getElementById('runBtn').onclick = async () => {
+      const from = document.getElementById('fromDate').value;
+      const to = document.getElementById('toDate').value;
+      const driverId = document.getElementById('driverId').value.trim() || null;
+      
+      if (!from || !to) {
+        alert('⚠️ Por favor selecciona ambas fechas');
+        return;
+      }
+
+      const stopLoading = showLoading(document.getElementById('runBtn'));
+
+      try {
+        // Simular consulta (reemplaza con tu función real)
+        // const rows = await queryTracksRange({ from, to, driverId });
+        
+        // Datos de ejemplo para demostración
+        const rows = Array.from({length: 125}, (_, i) => ({
+          day: from,
+          driverId: driverId || `driver${(i % 5) + 1}`,
+          ts: Date.now() - (i * 60000),
+          lat: -12.056 + (Math.random() - 0.5) * 0.1,
+          lng: -77.084 + (Math.random() - 0.5) * 0.1,
+          speed: Math.floor(Math.random() * 60),
+          status: ['EN_RUTA', 'DETENIDO', 'SOS'][Math.floor(Math.random() * 3)]
+        }));
+
+        lastRows = rows;
+        currentPage = 1;
+
+        // Mostrar resumen
+        const totalPoints = rows.length;
+        const uniqueDrivers = [...new Set(rows.map(r => r.driverId))].length;
+        const avgSpeed = rows.reduce((sum, r) => sum + (r.speed || 0), 0) / rows.length;
+
+        document.getElementById('summary').innerHTML = `
+          <div style="
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+          ">
+            <h3 style="margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+              <span>📈</span>
+              Resumen de Consulta
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+              <div style="text-align: center; padding: 16px; background: var(--background); border-radius: 8px;">
+                <div style="font-size: 24px; font-weight: 700; color: var(--primary);">${totalPoints.toLocaleString()}</div>
+                <div style="font-size: 14px; color: var(--text-muted);">📍 Total de puntos</div>
+              </div>
+              <div style="text-align: center; padding: 16px; background: var(--background); border-radius: 8px;">
+                <div style="font-size: 24px; font-weight: 700; color: var(--success);">${uniqueDrivers}</div>
+                <div style="font-size: 14px; color: var(--text-muted);">🚐 Conductores únicos</div>
+              </div>
+              <div style="text-align: center; padding: 16px; background: var(--background); border-radius: 8px;">
+                <div style="font-size: 24px; font-weight: 700; color: var(--warning);">${avgSpeed.toFixed(1)} km/h</div>
+                <div style="font-size: 14px; color: var(--text-muted);">🚗 Velocidad promedio</div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('summary').style.display = 'block';
+        document.getElementById('tableContainer').style.display = 'block';
+        document.getElementById('emptyState').style.display = 'none';
+
+        renderTable(rows);
+
+      } catch (error) {
+        alert('❌ Error al consultar los datos: ' + error.message);
+      } finally {
+        stopLoading();
+      }
+    };
+
+    document.getElementById('csvBtn').onclick = () => {
+      if (!lastRows.length) {
+        alert('⚠️ No hay datos para exportar');
+        return;
+      }
+
+      const header = ['Fecha', 'Driver ID', 'Timestamp', 'Latitud', 'Longitud', 'Velocidad', 'Estado'];
+      const csvContent = [
+        header.join(','),
+        ...lastRows.map(r => [
+          r.day,
+          r.driverId,
+          r.ts,
+          r.lat,
+          r.lng,
+          r.speed ?? '',
+          r.status ?? ''
+        ].join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `recorridos_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+    };
+
+    document.getElementById('clearBtn').onclick = () => {
+      document.getElementById('summary').style.display = 'none';
+      document.getElementById('tableContainer').style.display = 'none';
+      document.getElementById('emptyState').style.display = 'block';
+      document.getElementById('driverId').value = '';
+      lastRows = [];
+      currentPage = 1;
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Dashboard — Panel Buses UNE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/base.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <div>Panel de Control</div>
+    <nav>
+      <a href="/admin/index.html">Dashboard</a>
+      <a href="/admin/reports.html">Reportes</a>
+      <button id="logoutBtn">Salir</button>
+    </nav>
+  </header>
+  
+  <div class="layout">
+    <aside>
+      <div class="filters">
+        <select id="routeFilter">
+          <option value="">🗺️ Todas las rutas</option>
+        </select>
+        <select id="statusFilter">
+          <option value="">📊 Todos los estados</option>
+          <option value="EN_RUTA">🟢 En Ruta</option>
+          <option value="DETENIDO">🟡 Detenido</option>
+          <option value="FUERA_DE_SERVICIO">⚫ Fuera de Servicio</option>
+          <option value="SOS">🔴 SOS</option>
+          <option value="SIN_SENAL">📵 Sin Señal</option>
+        </select>
+      </div>
+      <div id="busList"></div>
+    </aside>
+    
+    <main>
+      <div id="map"></div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module">
+    import './assets/js/config.js';
+    import { auth } from './assets/js/firebase.js';
+    import { requireSession, signOutNow } from './assets/js/auth.js';
+    import { subscribeBuses } from './assets/js/store.js';
+    import { initMap, upsertBusMarker, fitAll } from './assets/js/map.js';
+    import { renderList, setDataSource, applyFilters } from './assets/js/ui-list.js';
+
+    await requireSession(auth, '/admin/login.html');
+
+    const map = initMap([-12.056, -77.084], 12);
+    const buses = new Map();
+    setDataSource({ getAll: ()=>[...buses.values()] });
+
+    subscribeBuses((bus)=>{
+      buses.set(bus.driverId, bus);
+      upsertBusMarker(map, bus);
+      renderList();
+      fitAll(map);
+    });
+
+    routeFilter.addEventListener('change', ()=>applyFilters());
+    statusFilter.addEventListener('change', ()=>applyFilters());
+    logoutBtn.onclick = ()=>signOutNow(auth);
+
+    // Mejorar la experiencia de carga
+    document.addEventListener('DOMContentLoaded', () => {
+      // Añadir indicador de carga
+      const loadingIndicator = document.createElement('div');
+      loadingIndicator.innerHTML = `
+        <div style="
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(248, 250, 252, 0.9);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          backdrop-filter: blur(4px);
+        ">
+          <div style="
+            text-align: center;
+            color: #2563eb;
+            font-weight: 600;
+          ">
+            <div style="
+              width: 40px;
+              height: 40px;
+              border: 3px solid #e2e8f0;
+              border-top: 3px solid #2563eb;
+              border-radius: 50%;
+              animation: spin 1s linear infinite;
+              margin: 0 auto 16px;
+            "></div>
+            Cargando panel de control...
+          </div>
+        </div>
+        <style>
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        </style>
+      `;
+      
+      document.body.appendChild(loadingIndicator);
+      
+      // Remover después de 2 segundos o cuando el mapa esté listo
+      setTimeout(() => {
+        loadingIndicator.remove();
+      }, 2000);
+    });
+  </script>
+</body>
+</html>
