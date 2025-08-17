@@ -101,7 +101,7 @@
     import { auth } from './assets/js/firebase.js';
     import { signIn, requireNoSession } from './assets/js/auth.js';
 
-    requireNoSession(auth, '/admin/index.html');
+    requireNoSession(auth, '/index.html');
 
     const loginButton = document.getElementById('loginButton');
     const msgDiv = document.getElementById('msg');
@@ -141,7 +141,7 @@
       if (ok) {
         showMessage('¡Acceso autorizado! Redirigiendo...');
         setTimeout(() => {
-          location.href = '/admin/index.html';
+          if (ok) location.href = '/index.html';
         }, 1500);
       } else {
         showMessage(`Error de autenticación: ${error}`, true);
@@ -154,4 +154,5 @@
     });
   </script>
 </body>
+
 </html>
