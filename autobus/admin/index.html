@@ -52,7 +52,7 @@
     import { initMap, upsertBusMarker, fitAll } from './assets/js/map.js';
     import { renderList, setDataSource, applyFilters } from './assets/js/ui-list.js';
 
-    await requireSession(auth, '/admin/login.html');
+    await requireSession(auth, '/login.html'); // antes era /admin/login.html
 
     const map = initMap([-12.056, -77.084], 12);
     const buses = new Map();
@@ -123,3 +123,4 @@
 </body>
 
 </html>
+
