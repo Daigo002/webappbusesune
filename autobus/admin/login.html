@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/base.css"/>
+  <base href="/">
 </head>
 <body>
   <main class="centered">
@@ -101,7 +102,7 @@
     import { auth } from './assets/js/firebase.js';
     import { signIn, requireNoSession } from './assets/js/auth.js';
 
-    requireNoSession(auth, '/index.html');
+    requireNoSession(auth, 'index.html');
 
     const loginButton = document.getElementById('loginButton');
     const msgDiv = document.getElementById('msg');
@@ -141,7 +142,7 @@
       if (ok) {
         showMessage('¡Acceso autorizado! Redirigiendo...');
         setTimeout(() => {
-          if (ok) location.href = '/index.html';
+          location.href = 'index.html';
         }, 1500);
       } else {
         showMessage(`Error de autenticación: ${error}`, true);
@@ -154,5 +155,4 @@
     });
   </script>
 </body>
-
 </html>

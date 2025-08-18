@@ -23,5 +23,5 @@ export function requireSession(auth, loginUrl){
 
 export async function signOutNow(auth){
   await signOut(auth);
-  location.href = '/admin/login.html';
+  location.href = 'login.html';
 }

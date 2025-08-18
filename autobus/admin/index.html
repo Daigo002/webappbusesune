@@ -9,15 +9,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/base.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <base href="/">
 </head>
 <body>
   <header class="topbar">
     <div>Panel de Control</div>
-<nav>
-  <a href="/index.html">Dashboard</a>
-  <a href="/reports.html">Reportes</a>
-  <button id="logoutBtn">Salir</button>
-</nav>
+    <nav>
+      <a href="index.html">Dashboard</a>
+      <a href="reports.html">Reportes</a>
+      <button id="logoutBtn">Salir</button>
+    </nav>
   </header>
   
   <div class="layout">
@@ -52,7 +53,7 @@
     import { initMap, upsertBusMarker, fitAll } from './assets/js/map.js';
     import { renderList, setDataSource, applyFilters } from './assets/js/ui-list.js';
 
-    await requireSession(auth, '/login.html'); // antes era /admin/login.html
+    await requireSession(auth, 'login.html');
 
     const map = initMap([-12.056, -77.084], 12);
     const buses = new Map();
@@ -121,6 +122,4 @@
     });
   </script>
 </body>
-
 </html>
-

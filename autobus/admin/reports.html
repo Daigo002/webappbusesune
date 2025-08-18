@@ -8,15 +8,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/base.css"/>
+  <base href="/">
 </head>
 <body>
   <header class="topbar">
     <div>Reportes y Analytics</div>
     <nav>
-  <a href="/index.html">Dashboard</a>
-  <a href="/reports.html">Reportes</a>
-  <button id="logoutBtn">Salir</button>
-</nav>
+      <a href="index.html">Dashboard</a>
+      <a href="reports.html">Reportes</a>
+      <button id="logoutBtn">Salir</button>
+    </nav>
   </header>
 
   <main class="content">
@@ -166,7 +167,7 @@
     import { auth } from './assets/js/firebase.js';
     import { requireSession, signOutNow } from './assets/js/auth.js';
 
-    await requireSession(auth, '/admin/login.html');
+    await requireSession(auth, 'login.html');
     logoutBtn.onclick = () => signOutNow(auth);
 
     let lastRows = [];
@@ -388,5 +389,4 @@
     };
   </script>
 </body>
-
 </html>
